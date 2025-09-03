@@ -5,8 +5,11 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # --- CONFIG ---
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # from Koyeb environment
-ADMIN_ID = int(os.getenv("ADMIN_ID", "7547946252,6762330279"))  # your Telegram user ID
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+# Multiple admins supported (comma-separated in Koyeb env)
+ADMIN_IDS = os.getenv("ADMIN_IDS", "7547946252,6762330279").split(",")
+ADMIN_IDS = [int(x.strip()) for x in ADMIN_IDS if x.strip()]
 
 WELCOME_FILE = "welcome.json"
 USERS_FILE = "users.json"
@@ -40,7 +43,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(WELCOME["welcome"])
 
 async def setwelcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
+    if update.effective_user.id not in ADMIN_IDS:
         return
     if not context.args:
         await update.message.reply_text("⚠️ Usage: /setwelcome <message>")
@@ -51,7 +54,7 @@ async def setwelcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Welcome message updated:\n\n{msg}")
 
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
+    if update.effective_user.id not in ADMIN_IDS:
         return
     if not context.args:
         await update.message.reply_text("⚠️ Usage: /broadcast <message>")
@@ -66,12 +69,18 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
     await update.message.reply_text(f"📢 Broadcast sent to {count} users.")
 
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id not in ADMIN_IDS:
+        return
+    await update.message.reply_text(f"📊 Total users: {len(USERS)}")
+
 # --- MAIN ---
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("setwelcome", setwelcome))
     app.add_handler(CommandHandler("broadcast", broadcast))
+    app.add_handler(CommandHandler("stats", stats))
     app.run_polling()
 
 if __name__ == "__main__":

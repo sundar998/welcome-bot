@@ -6,7 +6,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 # --- CONFIG ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")  # from Koyeb environment
-ADMIN_ID = int(os.getenv("ADMIN_ID", "123456789"))  # your Telegram user ID
+ADMIN_ID = int(os.getenv("ADMIN_ID", "7547946252"))  # your Telegram user ID
 
 WELCOME_FILE = "welcome.json"
 USERS_FILE = "users.json"

@@ -2,6 +2,8 @@ from pyrogram import Client, filters
 from pyrogram.types import ChatJoinRequest
 from database.groups_db import get_group
 from database.stats_db import increment_user_joins
+from utils.helpers import send_log  # <-- Added
+from config import LOG_CHANNEL      # <-- Added
 
 @Client.on_chat_join_request()
 async def auto_approve(client: Client, join_request: ChatJoinRequest):
@@ -22,3 +24,12 @@ async def auto_approve(client: Client, join_request: ChatJoinRequest):
 
     # Increment stats
     increment_user_joins(group_id)
+
+    # -------------------------
+    # Send log to log channel
+    # -------------------------
+    if LOG_CHANNEL:
+        user_name = join_request.from_user.first_name
+        user_username = join_request.from_user.username or "NoUsername"
+        chat_title = join_request.chat.title
+        await send_log(client, f"👤 New user joined: {user_name} (@{user_username}) in {chat_title} ({group_id})")

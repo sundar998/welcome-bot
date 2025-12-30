@@ -1,7 +1,9 @@
 from pyrogram import Client
-from config import API_ID, API_HASH, BOT_TOKEN
+from config import API_ID, API_HASH, BOT_TOKEN, LOG_CHANNEL
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import asyncio
+from utils.helpers import send_log
 
 # -------------------------
 # Fake HTTP server for Koyeb health check
@@ -30,5 +32,14 @@ app = Client(
 )
 
 print("🤖 Bot started successfully")
+
+# -------------------------
+# Send log on bot start
+# -------------------------
+async def bot_start_log():
+    await send_log(app, "🤖 Bot restarted successfully")
+
+# Schedule log after bot starts
+asyncio.get_event_loop().create_task(bot_start_log())
 
 app.run()

@@ -1,19 +1,24 @@
 from pyrogram import Client, filters
-from database.welcome_db import set_text
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from database.groups_db import get_group
 
-@Client.on_message(filters.group & filters.command("setwelcome"))
-async def set_welcome(client, message):
-    admins = [m.user.id for m in await client.get_chat_members(
-        message.chat.id,
-        filter="administrators"
-    )]
+@Client.on_callback_query(filters.regex("manage_groups"))
+async def manage_groups(client: Client, callback_query):
+    user_id = callback_query.from_user.id
+    # Only OWNER can manage groups
+    from config import OWNER_ID
+    if user_id != int(OWNER_ID):
+        await callback_query.answer("❌ You are not authorized.", show_alert=True)
+        return
 
-    if message.from_user.id not in admins:
-        return await message.reply("❌ Admin only")
+    # List all groups
+    from database.groups_db import groups_col
+    groups = groups_col.find({})
+    buttons = []
+    for g in groups:
+        buttons.append([InlineKeyboardButton(g.get("group_name", str(g["_id"])), callback_data=f"group_{g['_id']}")])
 
-    args = message.text.split(None, 1)
-    if len(args) < 2:
-        return await message.reply("Usage:\n/setwelcome Welcome text")
-
-    set_text(message.chat.id, args[1])
-    await message.reply("✅ Welcome message updated")
+    await callback_query.message.edit_text(
+        "📋 Select a group to manage:",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )

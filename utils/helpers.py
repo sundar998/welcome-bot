@@ -1,9 +1,14 @@
 from datetime import datetime
-from config import LOG_CHANNEL
 
-# -------------------------
-# User formatting helpers
-# -------------------------
+async def send_log(client, text):
+    try:
+        from config import LOG_CHANNEL
+        if not LOG_CHANNEL:
+            return
+        await client.send_message(LOG_CHANNEL, text)
+    except Exception as e:
+        print(f"❌ Log send failed: {e}")
+
 def format_username(user):
     if user.username:
         return f"@{user.username}"
@@ -17,14 +22,3 @@ def current_date():
 
 def weekday():
     return datetime.now().strftime("%A")
-
-# -------------------------
-# Log channel helper
-# -------------------------
-async def send_log(client, text):
-    if not LOG_CHANNEL:
-        return
-    try:
-        await client.send_message(LOG_CHANNEL, text)
-    except Exception as e:
-        print(f"❌ Log send failed: {e}")

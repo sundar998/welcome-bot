@@ -2,6 +2,8 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from database.groups_db import get_group, update_group
 from database.welcome_db import get_welcome_text, get_welcome_media, get_buttons
+from utils.helpers import send_log       # <-- Added
+from config import LOG_CHANNEL           # <-- Added
 
 @Client.on_message(filters.new_chat_members)
 async def welcome_new_member(client: Client, message: Message):
@@ -50,3 +52,9 @@ async def welcome_new_member(client: Client, message: Message):
 
         # Save last welcome message ID
         update_group(chat_id, {"last_welcome_message_id": msg.message_id})
+
+        # -------------------------
+        # Send log to log channel
+        # -------------------------
+        if LOG_CHANNEL:
+            await send_log(client, f"👋 Welcome message sent to {user.first_name} ({user.id}) in {message.chat.title} ({chat_id})")

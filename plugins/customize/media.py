@@ -1,37 +1,26 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from database.welcome_db import set_welcome_media
+from utils.helpers import send_log
+from config import OWNER_ID
 
-@Client.on_message(filters.command("set_media") & filters.group)
-async def set_welcome_media_handler(client: Client, message: Message):
-    chat_id = message.chat.id
-
-    if not message.reply_to_message:
-        await message.reply("ℹ️ Reply to the media message you want to set as welcome.")
+@Client.on_message(filters.private & (filters.photo | filters.video | filters.animation | filters.sticker))
+async def set_media(client: Client, message: Message):
+    if message.from_user.id != int(OWNER_ID):
         return
 
-    reply = message.reply_to_message
+    group_id = message.chat.id
 
-    media_type = None
-    file_id = None
-    caption = reply.caption if reply.caption else None
+    file_id = (
+        message.photo.file_id if message.photo else
+        message.video.file_id if message.video else
+        message.animation.file_id if message.animation else
+        message.sticker.file_id
+    )
 
-    if reply.photo:
-        media_type = "photo"
-        file_id = reply.photo.file_id
-    elif reply.video:
-        media_type = "video"
-        file_id = reply.video.file_id
-    elif reply.animation:
-        media_type = "animation"
-        file_id = reply.animation.file_id
-    elif reply.sticker:
-        media_type = "sticker"
-        file_id = reply.sticker.file_id
+    caption = message.caption or None
 
-    if not file_id:
-        await message.reply("❌ No valid media found in the replied message.")
-        return
+    set_welcome_media(group_id, file_id, caption)
 
-    set_welcome_media(chat_id, media_type, file_id, caption)
-    await message.reply(f"✅ Welcome {media_type} has been set successfully.")
+    await message.reply("✅ Media saved successfully")
+    await send_log(client, f"📷 Media updated for group {group_id}")

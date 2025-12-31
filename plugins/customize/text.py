@@ -1,15 +1,25 @@
 from pyrogram import Client, filters
 from database.welcome_db import set_welcome_text
-from pyrogram.types import Message
 
-@Client.on_message(filters.command("set_text") & filters.group)
-async def set_welcome_text_handler(client: Client, message: Message):
-    chat_id = message.chat.id
+@Client.on_callback_query(filters.regex(r"^set_text:(-?\d+)$"))
+async def text_setup(client, cq):
+    group_id = int(cq.matches[0].group(1))
 
-    if not message.reply_to_message or not message.reply_to_message.text:
-        await message.reply("ℹ️ Reply to the message containing the welcome text you want to set.")
+    await cq.message.reply_text(
+        "Send now the message you want to set!\n\n"
+        "{NAME} {SURNAME} {USERNAME} {MENTION} {GROUPNAME}"
+    )
+
+    client.user_data = {"text_group": group_id}
+
+@Client.on_message(filters.text & filters.private)
+async def save_text(client, message):
+    if not hasattr(client, "user_data"):
+        return
+    if "text_group" not in client.user_data:
         return
 
-    text = message.reply_to_message.text
-    set_welcome_text(chat_id, text)
-    await message.reply("✅ Welcome text has been set successfully.")
+    group_id = client.user_data.pop("text_group")
+    set_welcome_text(group_id, message.text)
+
+    await message.reply("✅ Welcome text saved")

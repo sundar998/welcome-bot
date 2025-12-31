@@ -1,26 +1,27 @@
 from pyrogram import Client, filters
-from pyrogram.types import Message
 from database.welcome_db import set_welcome_media
-from utils.helpers import send_log
-from config import OWNER_ID
 
-@Client.on_message(filters.private & (filters.photo | filters.video | filters.animation | filters.sticker))
-async def set_media(client: Client, message: Message):
-    if message.from_user.id != int(OWNER_ID):
+@Client.on_callback_query(filters.regex(r"^set_media:(-?\d+)$"))
+async def media_setup(client, cq):
+    group_id = int(cq.matches[0].group(1))
+    client.user_data = {"media_group": group_id}
+
+    await cq.message.reply_text("👉 Send photo / video / gif")
+
+@Client.on_message(filters.media & filters.private)
+async def save_media(client, message):
+    if not hasattr(client, "user_data"):
+        return
+    if "media_group" not in client.user_data:
         return
 
-    group_id = message.chat.id
+    group_id = client.user_data.pop("media_group")
 
     file_id = (
         message.photo.file_id if message.photo else
         message.video.file_id if message.video else
-        message.animation.file_id if message.animation else
-        message.sticker.file_id
+        message.animation.file_id
     )
 
-    caption = message.caption or None
-
-    set_welcome_media(group_id, file_id, caption)
-
-    await message.reply("✅ Media saved successfully")
-    await send_log(client, f"📷 Media updated for group {group_id}")
+    set_welcome_media(group_id, file_id)
+    await message.reply("✅ Media saved")
